@@ -1,0 +1,200 @@
+{
+  "entities": {
+    "CommanderProfile": {
+      "title": "CommanderProfile",
+      "description": "Global UEC commander progression, credits, unlocked technologies, and active planetary sector synced across devices.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the commander."
+        },
+        "callsign": {
+          "type": "string",
+          "description": "Commander display callsign (1-40 chars)."
+        },
+        "activePlanetId": {
+          "type": "string",
+          "enum": ["temperate", "volcanic", "cryo", "arid"],
+          "description": "Currently active planetary sector identifier."
+        },
+        "uecCredits": {
+          "type": "integer",
+          "description": "Total United Earth Coalition requisition credits."
+        },
+        "colonizationScore": {
+          "type": "integer",
+          "description": "Cumulative planetary colonization readiness points."
+        },
+        "contractsCompleted": {
+          "type": "integer",
+          "description": "Number of urgent UEC supply contracts fulfilled."
+        },
+        "hazardsSurvived": {
+          "type": "integer",
+          "description": "Number of environmental hazards and dynamic events resolved."
+        },
+        "unlockedTechIds": {
+          "type": "array",
+          "description": "Bounded list of researched tech node IDs (max 32)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "callsign",
+        "activePlanetId",
+        "uecCredits",
+        "colonizationScore",
+        "contractsCompleted",
+        "hazardsSurvived",
+        "unlockedTechIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PlanetColony": {
+      "title": "PlanetColony",
+      "description": "Per-planet factory layout, resource stockpiles, power telemetry, and active environmental hazard state.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase UID."
+        },
+        "planetId": {
+          "type": "string",
+          "enum": ["temperate", "volcanic", "cryo", "arid"],
+          "description": "Planetary biome identifier."
+        },
+        "biomeName": {
+          "type": "string",
+          "description": "Display name of the planetary sector (1-60 chars)."
+        },
+        "colonizationPercent": {
+          "type": "integer",
+          "description": "Colony supply readiness progress (0-100)."
+        },
+        "powerGeneratedMw": {
+          "type": "integer",
+          "description": "Current power generation in megawatts."
+        },
+        "powerConsumedMw": {
+          "type": "integer",
+          "description": "Current power demand in megawatts."
+        },
+        "buildings": {
+          "type": "array",
+          "description": "Placed factory structures on the 14x14 grid (max 200 entries)."
+        },
+        "inventory": {
+          "type": "object",
+          "description": "Map of resource IDs to stored integer quantities."
+        },
+        "activeHazardId": {
+          "type": "string",
+          "description": "Identifier of active environmental hazard or none (max 40 chars)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "planetId",
+        "biomeName",
+        "colonizationPercent",
+        "powerGeneratedMw",
+        "powerConsumedMw",
+        "buildings",
+        "inventory",
+        "activeHazardId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MissionEventLog": {
+      "title": "MissionEventLog",
+      "description": "Cloud-synced record of resolved dynamic events, supply drops, and environmental incidents.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase UID."
+        },
+        "planetId": {
+          "type": "string",
+          "enum": ["temperate", "volcanic", "cryo", "arid"],
+          "description": "Planet where the event occurred."
+        },
+        "eventType": {
+          "type": "string",
+          "enum": ["scarcity", "wildlife", "supply_contract", "cosmic", "hazard"],
+          "description": "Category of dynamic world event."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short event headline (1-80 chars)."
+        },
+        "outcome": {
+          "type": "string",
+          "description": "Summary of player tactical response and result (1-160 chars)."
+        },
+        "creditsDelta": {
+          "type": "integer",
+          "description": "Net UEC Credits gained or spent."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server event timestamp via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "planetId",
+        "eventType",
+        "title",
+        "outcome",
+        "creditsDelta",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/CommanderProfile"
+      },
+      "description": "Root commander profile and cross-planet tech progression."
+    },
+    "/users/{userId}/planets/{planetId}": {
+      "schema": {
+        "$ref": "#/entities/PlanetColony"
+      },
+      "description": "Cloud-synced planetary factory grid, inventory, and biome state per world."
+    },
+    "/users/{userId}/eventLogs/{eventLogId}": {
+      "schema": {
+        "$ref": "#/entities/MissionEventLog"
+      },
+      "description": "Chronological mission telemetry and dynamic event resolution log."
+    }
+  }
+}

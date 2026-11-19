@@ -1,0 +1,175 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL PRIMITIVE HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidPlanetId(pid) {
+      return pid in ['temperate', 'volcanic', 'cryo', 'arid'];
+    }
+
+    function isValidEventType(etype) {
+      return etype in ['scarcity', 'wildlife', 'supply_contract', 'cosmic', 'hazard'];
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+    function isValidCommanderProfile(data, userId) {
+      return data.userId == userId &&
+        data.callsign is string && data.callsign.size() >= 1 && data.callsign.size() <= 40 &&
+        isValidPlanetId(data.activePlanetId) &&
+        data.uecCredits is int && data.uecCredits >= 0 && data.uecCredits <= 1000000000 &&
+        data.colonizationScore is int && data.colonizationScore >= 0 && data.colonizationScore <= 1000000000 &&
+        data.contractsCompleted is int && data.contractsCompleted >= 0 && data.contractsCompleted <= 1000000 &&
+        data.hazardsSurvived is int && data.hazardsSurvived >= 0 && data.hazardsSurvived <= 1000000 &&
+        data.unlockedTechIds is list && data.unlockedTechIds.size() <= 32 &&
+        (data.unlockedTechIds.size() == 0 || data.unlockedTechIds[0] is string) &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPlanetColony(data, userId, planetId) {
+      return data.userId == userId &&
+        data.planetId == planetId &&
+        isValidPlanetId(data.planetId) &&
+        data.biomeName is string && data.biomeName.size() >= 1 && data.biomeName.size() <= 60 &&
+        data.colonizationPercent is int && data.colonizationPercent >= 0 && data.colonizationPercent <= 100 &&
+        data.powerGeneratedMw is int && data.powerGeneratedMw >= 0 && data.powerGeneratedMw <= 1000000 &&
+        data.powerConsumedMw is int && data.powerConsumedMw >= 0 && data.powerConsumedMw <= 1000000 &&
+        data.buildings is list && data.buildings.size() <= 200 &&
+        (data.buildings.size() == 0 || data.buildings[0] is map) &&
+        data.inventory is map && data.inventory.size() <= 40 &&
+        data.activeHazardId is string && data.activeHazardId.size() >= 1 && data.activeHazardId.size() <= 40 &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMissionEventLog(data, userId) {
+      return data.userId == userId &&
+        isValidPlanetId(data.planetId) &&
+        isValidEventType(data.eventType) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+        data.outcome is string && data.outcome.size() >= 1 && data.outcome.size() <= 160 &&
+        data.creditsDelta is int && data.creditsDelta >= -1000000 && data.creditsDelta <= 1000000 &&
+        data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // --- COLLECTION RULES ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().keys().hasAll([
+          'userId', 'callsign', 'activePlanetId', 'uecCredits',
+          'colonizationScore', 'contractsCompleted', 'hazardsSurvived',
+          'unlockedTechIds', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().keys().hasOnly([
+          'userId', 'callsign', 'activePlanetId', 'uecCredits',
+          'colonizationScore', 'contractsCompleted', 'hazardsSurvived',
+          'unlockedTechIds', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidCommanderProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidCommanderProfile(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        (
+          // Action: Sync commander progression, tech unlocks, or active planet switch
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'callsign', 'activePlanetId', 'uecCredits', 'colonizationScore',
+            'contractsCompleted', 'hazardsSurvived', 'unlockedTechIds', 'updatedAt'
+          ])
+        );
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Per-planet factory colonies
+      match /planets/{planetId} {
+        allow get: if isOwner(userId) && isValidId(planetId) && isValidPlanetId(planetId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(planetId) &&
+          isValidPlanetId(planetId) &&
+          incoming().keys().hasAll([
+            'userId', 'planetId', 'biomeName', 'colonizationPercent',
+            'powerGeneratedMw', 'powerConsumedMw', 'buildings', 'inventory',
+            'activeHazardId', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'planetId', 'biomeName', 'colonizationPercent',
+            'powerGeneratedMw', 'powerConsumedMw', 'buildings', 'inventory',
+            'activeHazardId', 'createdAt', 'updatedAt'
+          ]) &&
+          isValidPlanetColony(incoming(), userId, planetId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(planetId) &&
+          isValidPlanetId(planetId) &&
+          isValidPlanetColony(incoming(), userId, planetId) &&
+          incoming().userId == existing().userId &&
+          incoming().planetId == existing().planetId &&
+          incoming().createdAt == existing().createdAt &&
+          (
+            // Action: Sync factory layout, stockpiles, power, and environmental state
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'biomeName', 'colonizationPercent', 'powerGeneratedMw', 'powerConsumedMw',
+              'buildings', 'inventory', 'activeHazardId', 'updatedAt'
+            ])
+          );
+
+        allow delete: if isOwner(userId) && isValidId(planetId);
+      }
+
+      // Subcollection: Chronological dynamic event & mission logs
+      match /eventLogs/{eventLogId} {
+        allow get: if isOwner(userId) && isValidId(eventLogId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(eventLogId) &&
+          incoming().keys().hasAll([
+            'userId', 'planetId', 'eventType', 'title',
+            'outcome', 'creditsDelta', 'createdAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'planetId', 'eventType', 'title',
+            'outcome', 'creditsDelta', 'createdAt'
+          ]) &&
+          isValidMissionEventLog(incoming(), userId);
+
+        // Event logs are append-only historical telemetry
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(eventLogId);
+      }
+    }
+  }
+}

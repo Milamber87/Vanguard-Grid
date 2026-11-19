@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Vanguard Grid</string>
+    <string name="uec_division_subtitle">UNITED EARTH COALITION // PLANETARY LOGISTICS CORPS</string>
+    <string name="auth_headline">AUTOMATE THE FRONTIER</string>
+    <string name="auth_description">Deploy automated supply grids across hostile worlds for incoming UEC colonists and orbital strike forces. Sign in to sync factories, tech trees, and mission logs seamlessly across all devices.</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="nav_factory">Grid</string>
+    <string name="nav_units">Units</string>
+    <string name="nav_planets">Planets</string>
+    <string name="nav_tech">Tech Tree</string>
+    <string name="nav_ops">Ops &amp; Sync</string>
+    <string name="cloud_synced">Cloud Synced</string>
+    <string name="cloud_syncing">Syncing…</string>
+    <string name="cloud_offline">Local Buffer</string>
+    <string name="sync_now">Sync Now</string>
+    <string name="deploy_to_sector">Deploy Drop Pod</string>
+    <string name="active_sector">Active Sector</string>
+    <string name="research_unlock">Research</string>
+    <string name="researched">Unlocked</string>
+    <string name="locked_prereq">Prereq Required</string>
+    <string name="trigger_event_scan">Scan Sector Anomaly</string>
+    <string name="trigger_hazard_drill">Simulate Hazard Pulse</string>
+    <string name="repair_all">Repair Grid</string>
+    <string name="no_active_events">All planetary channels nominal. No urgent anomalies detected.</string>
+    <string name="empty_event_logs">No resolved incidents logged yet. Respond to dynamic events or launch UEC supply contracts to record telemetry.</string>
+</resources>

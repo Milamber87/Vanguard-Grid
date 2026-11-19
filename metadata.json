@@ -1,0 +1,6 @@
+{
+  "name": "Vanguard Grid",
+  "description": "United Earth Coalition planetary logistics and automation game featuring conveyor networks, multi-tier crafting chains, deep tech trees, dynamic environmental hazards, and cross-device cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
