@@ -1,0 +1,1 @@
+I am trying to make a kind of similar game to mindustry where you develop local planets for there resources and fight elements and local fauna who threaten your supply chains. please feel free to add if you can make this game better
